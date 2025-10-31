@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/progress_tracker.dart';
 import 'success_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -17,6 +18,16 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _showPwd = false;
   String? _avatar; // selected emoji
 
+  int _progress = 0;
+  final Set<String> _done = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // initial recalc covers default values (none selected yet)
+    _recalcProgress();
+  }
+
   @override
   void dispose() {
     for (var c in [
@@ -30,6 +41,27 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
+  void _recalcProgress() {
+    _done.clear();
+
+    if (_avatar != null && _avatar!.isNotEmpty) _done.add('avatar');
+
+    final name = _nameController.text.trim();
+    if (name.isNotEmpty) _done.add('name');
+
+    final email = _emailController.text.trim();
+    final validEmail = email.isNotEmpty && email.contains('@') && email.contains('.');
+    if (validEmail) _done.add('email');
+
+    if (_dobController.text.trim().isNotEmpty) _done.add('dob');
+
+    if (_pwdController.text.length >= 6) _done.add('pwd');
+
+    setState(() {
+      _progress = ((_done.length / 5) * 100).round();
+    });
+  }
+
   Future<void> _selectDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -39,6 +71,7 @@ class _SignupScreenState extends State<SignupScreen> {
     );
     if (picked != null) {
       _dobController.text = "${picked.day}/${picked.month}/${picked.year}";
+      _recalcProgress();
     }
   }
 
@@ -61,9 +94,11 @@ class _SignupScreenState extends State<SignupScreen> {
     required String label,
     required IconData icon,
     String? Function(String?)? validator,
+    void Function(String)? onChanged,
   }) {
     return TextFormField(
       controller: controller,
+      onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: Colors.deepPurple),
@@ -90,9 +125,15 @@ class _SignupScreenState extends State<SignupScreen> {
         child: SingleChildScrollView(
           child: Form(
             key: _formKey,
+            onChanged: _recalcProgress, // safety net: any change triggers update
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header
+                // PROGRESS
+                ProgressTracker(progress: _progress),
+                const SizedBox(height: 20),
+
+                // Header card
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 500),
                   curve: Curves.easeInOut,
@@ -118,9 +159,9 @@ class _SignupScreenState extends State<SignupScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 24),
 
-                // Avatar Picker
+                // Avatar Picker (counts toward progress)
                 const Text(
                   "Choose your avatar",
                   style: TextStyle(
@@ -132,7 +173,10 @@ class _SignupScreenState extends State<SignupScreen> {
                   children: avatars.map((a) {
                     final selected = _avatar == a;
                     return GestureDetector(
-                      onTap: () => setState(() => _avatar = a),
+                      onTap: () {
+                        setState(() => _avatar = a);
+                        _recalcProgress();
+                      },
                       child: CircleAvatar(
                         radius: 26,
                         backgroundColor:
@@ -142,24 +186,26 @@ class _SignupScreenState extends State<SignupScreen> {
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
 
                 // Name
                 _buildTextField(
                   controller: _nameController,
                   label: 'Adventure Name',
                   icon: Icons.person,
+                  onChanged: (_) => _recalcProgress(),
                   validator: (v) => (v == null || v.isEmpty)
                       ? 'What should we call you on this adventure?'
                       : null,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
                 // Email
                 _buildTextField(
                   controller: _emailController,
                   label: 'Email Address',
                   icon: Icons.email,
+                  onChanged: (_) => _recalcProgress(),
                   validator: (v) {
                     if (v == null || v.isEmpty) {
                       return 'We need your email for adventure updates!';
@@ -170,7 +216,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
                 // DOB
                 TextFormField(
@@ -190,15 +236,17 @@ class _SignupScreenState extends State<SignupScreen> {
                     filled: true,
                     fillColor: Colors.grey[50],
                   ),
-                  validator: (v) =>
-                  (v == null || v.isEmpty) ? 'When did your adventure begin?' : null,
+                  validator: (v) => (v == null || v.isEmpty)
+                      ? 'When did your adventure begin?'
+                      : null,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
                 // Password
                 TextFormField(
                   controller: _pwdController,
                   obscureText: !_showPwd,
+                  onChanged: (_) => _recalcProgress(),
                   decoration: InputDecoration(
                     labelText: 'Secret Password',
                     prefixIcon:
@@ -226,9 +274,9 @@ class _SignupScreenState extends State<SignupScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 24),
 
-                // Submit button
+                // Submit
                 ElevatedButton(
                   onPressed: _submit,
                   style: ElevatedButton.styleFrom(
