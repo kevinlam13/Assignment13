@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/progress_tracker.dart';
 import 'success_screen.dart';
-
+import '../widgets/password_strength.dart';
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
   @override
@@ -242,25 +242,22 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Password
+                // PASSWORD
                 TextFormField(
                   controller: _pwdController,
                   obscureText: !_showPwd,
                   onChanged: (_) => _recalcProgress(),
                   decoration: InputDecoration(
                     labelText: 'Secret Password',
-                    prefixIcon:
-                    const Icon(Icons.lock, color: Colors.deepPurple),
+                    prefixIcon: const Icon(Icons.lock, color: Colors.deepPurple),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _showPwd ? Icons.visibility_off : Icons.visibility,
                         color: Colors.deepPurple,
                       ),
-                      onPressed: () =>
-                          setState(() => _showPwd = !_showPwd),
+                      onPressed: () => setState(() => _showPwd = !_showPwd),
                     ),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     filled: true,
                     fillColor: Colors.grey[50],
                   ),
@@ -274,8 +271,8 @@ class _SignupScreenState extends State<SignupScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 24),
-
+                const SizedBox(height: 8),
+                PasswordStrengthBar(password: _pwdController.text),
                 // Submit
                 ElevatedButton(
                   onPressed: _submit,
